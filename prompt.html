@@ -37,6 +37,20 @@
     window.signInWithEmailAndPassword = signInWithEmailAndPassword;
     window.signOut = signOut;
   </script>
+  <script>
+    // Ensure login modal functions exist even if the module fails to load
+    window.openSignInModal = window.openSignInModal || function() {
+      document.getElementById('signInModal')?.classList.add('show');
+    };
+    window.closeSignInModal = window.closeSignInModal || function() {
+      const modal = document.getElementById('signInModal');
+      if (modal) modal.classList.remove('show');
+      const email = document.getElementById('email');
+      const password = document.getElementById('password');
+      if (email) email.value = '';
+      if (password) password.value = '';
+    };
+  </script>
   <style>
     * { box-sizing: border-box; }
     :root {
@@ -298,9 +312,9 @@
 <nav>
   <div class="nav-logo">RNDR 🔥</div>
   <div>
-    <button class="btn-glass" id="addCardBtn" onclick="openModal()" style="display: none;">+ Add Card</button>
-    <button class="btn-glass" id="signInBtn" onclick="openSignInModal()">Sign In</button>
-    <button class="btn-glass" id="signOutBtn" onclick="signOutUser()" style="display: none;">Sign Out</button>
+    <button class="btn-glass" id="addCardBtn" style="display: none;">+ Add Card</button>
+    <button class="btn-glass" id="signInBtn">Sign In</button>
+    <button class="btn-glass" id="signOutBtn" style="display: none;">Sign Out</button>
     <button class="btn-glass" onclick="window.history.back()">← Back</button>
   </div>
 </nav>
@@ -376,8 +390,8 @@
     <h3>Admin Sign In</h3>
     <input type="email" id="email" placeholder="Email" required>
     <input type="password" id="password" placeholder="Password" required>
-    <button onclick="signInUser()">Sign In</button>
-    <button onclick="closeSignInModal()">Cancel</button>
+    <button id="signInSubmit">Sign In</button>
+    <button id="signInCancel">Cancel</button>
   </div>
 </div>
 

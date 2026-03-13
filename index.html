@@ -90,19 +90,19 @@
   .btn-extract { background:var(--surface2); border-color:var(--border); color:var(--text); font-weight:600; }
   .btn-extract:hover { border-color:#555; background:#252525; }
 
-  .num-wrap { display:flex; align-items:center; position:relative; }
+  .num-wrap { display:flex; align-items:center; position:relative; z-index:100; }
   .num-select {
     background:var(--surface2); border:1px solid var(--border);
     color:var(--text); font-family:'DM Sans',sans-serif; font-size:14px; font-weight:600;
-    padding:10px 32px 10px 16px; border-radius:7px;
+    padding:8px 24px 8px 12px; border-radius:7px;
     cursor:pointer; outline:none; appearance:none; -webkit-appearance:none;
-    min-width:72px; text-align:center;
+    min-width:56px; text-align:center;
     transition: border-color .18s;
   }
   .num-select:hover, .num-select:focus { border-color:#555; }
   .num-select option { background:#1c1c1c; color:#fff; font-weight:500; }
   .sel-arr {
-    position:absolute; right:10px; top:50%; transform:translateY(-50%);
+    position:absolute; right:8px; top:50%; transform:translateY(-50%);
     color:var(--text-dim); font-size:10px; pointer-events:none; line-height:1;
   }
 

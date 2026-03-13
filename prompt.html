@@ -368,7 +368,7 @@
     /* gallery grid */
     .gallery {
       display: grid;
-      grid-template-columns: repeat(5, 1fr);
+      grid-template-columns: repeat(4, 1fr);
       gap: 16px;
       max-width: 1400px;
       margin: 0 auto;
@@ -392,7 +392,7 @@
     .flip-card-inner {
       position: relative;
       width: 100%;
-      padding-top: 100%; /* 1:1 aspect */
+      padding-top: 150%; /* taller for more text space */
       transition: transform 0.5s cubic-bezier(0.23, 1, 0.32, 1);
       transform-style: preserve-3d;
     }
@@ -431,12 +431,16 @@
       font-size: 15px;
       line-height: 1.4;
       word-break: break-word;
-      overflow-y: auto;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
     }
 
     .flip-card-back p {
       margin: 0;
       max-width: 100%;
+      flex: 1;
+      overflow: hidden;
     }
 
     .card-buttons {
@@ -444,6 +448,7 @@
       gap: 8px;
       justify-content: center;
       flex-wrap: wrap;
+      flex-shrink: 0;
     }
 
     .btn-copy-card {
@@ -629,4 +634,3 @@
 
 </body>
 </html>
-

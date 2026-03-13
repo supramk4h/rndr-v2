@@ -174,7 +174,7 @@
 
       try {
         // Save to Firestore
-        await addDoc(collection(window.firebaseDB, 'cards'), {
+        const docRef = await addDoc(collection(window.firebaseDB, 'cards'), {
           image: image,
           prompt: prompt,
           timestamp: new Date(),
@@ -182,10 +182,14 @@
         });
 
         // Add to gallery immediately
-        const cardDiv = createCardElement(image, prompt);
+        const cardDiv = createCardElement(image, prompt, docRef.id);
         document.getElementById('gallery').appendChild(cardDiv);
         attachCopyListeners();
         attachDeleteListeners();
+
+        // Show delete button since user is signed in
+        const deleteBtn = cardDiv.querySelector('.btn-delete-card');
+        if (deleteBtn) deleteBtn.style.display = 'inline-flex';
 
         closeModal();
         showToast('Card added successfully!');
@@ -243,7 +247,7 @@
         showToast('Signed in successfully!');
       } catch (error) {
         console.error('Sign in error:', error);
-        showToast('Sign in failed. Check credentials.');
+        showToast('Sign in failed: ' + error.message);
       }
     }
 
@@ -310,6 +314,12 @@
     padding:0 32px; height:52px;
   }
   .nav-logo { font-family:'Bebas Neue',sans-serif; font-size:22px; letter-spacing:3px; color:#fff; display:flex; align-items:center; gap:8px; }
+
+  .nav-left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
 
   .nav-buttons {
     display: flex;
@@ -571,12 +581,14 @@
 <body>
 
 <nav>
-  <div class="nav-logo">RNDR 🔥</div>
+  <div class="nav-left">
+    <div class="nav-logo">RNDR 🔥</div>
+    <button class="btn-glass" onclick="window.history.back()">← Back</button>
+  </div>
   <div class="nav-buttons">
     <button class="btn-glass" id="addCardBtn" style="display: none;">+ Add Card</button>
     <button class="btn-glass" id="signInBtn">Sign In</button>
     <button class="btn-glass" id="signOutBtn" style="display: none;">Sign Out</button>
-    <button class="btn-glass" onclick="window.history.back()">← Back</button>
   </div>
 </nav>
 
@@ -593,7 +605,9 @@
     </div>
     <div class="flip-card-back">
       <p>Isometric cityscape, wireframe buildings, futuristic design, high detail</p>
-      <button class="btn-copy-card">Copy Prompt</button>
+      <div class="card-buttons">
+        <button class="btn-copy-card">Copy Prompt</button>
+      </div>
     </div>
   </div>
 </div>
@@ -605,7 +619,9 @@
     </div>
     <div class="flip-card-back">
       <p>Top-down perspective of urban grid, neon lights, cyberpunk atmosphere</p>
-      <button class="btn-copy-card">Copy Prompt</button>
+      <div class="card-buttons">
+        <button class="btn-copy-card">Copy Prompt</button>
+      </div>
     </div>
   </div>
 </div>
@@ -617,7 +633,9 @@
     </div>
     <div class="flip-card-back">
       <p>Worm's eye view of skyscrapers, towering structures, dramatic shadows</p>
-      <button class="btn-copy-card">Copy Prompt</button>
+      <div class="card-buttons">
+        <button class="btn-copy-card">Copy Prompt</button>
+      </div>
     </div>
   </div>
 </div>
@@ -629,7 +647,9 @@
     </div>
     <div class="flip-card-back">
       <p>Dutch tilt on industrial complex, skewed perspective, moody tones</p>
-      <button class="btn-copy-card">Copy Prompt</button>
+      <div class="card-buttons">
+        <button class="btn-copy-card">Copy Prompt</button>
+      </div>
     </div>
   </div>
 </div>

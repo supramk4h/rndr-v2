@@ -36,6 +36,201 @@
     window.onAuthStateChanged = onAuthStateChanged;
     window.signInWithEmailAndPassword = signInWithEmailAndPassword;
     window.signOut = signOut;
+
+    // Now include the main script code
+    const toast = document.getElementById('toast');
+
+    // Show toast message (reusable)
+    function showToast(message = '✨ Prompt copied to clipboard') {
+      toast.textContent = message;
+      toast.classList.add('show');
+      clearTimeout(window.toastTimer);
+      window.toastTimer = setTimeout(() => {
+        toast.classList.remove('show');
+      }, 2000);
+    }
+
+    // Copy handler — robust: find the <p> inside the same .flip-card-back
+    function handleCopyClick(ev) {
+      const button = ev.currentTarget;
+      // navigate up to .flip-card-back, then find the paragraph
+      const backSide = button.closest('.flip-card-back');
+      if (!backSide) return;
+
+      const promptPara = backSide.querySelector('p');
+      if (!promptPara) return;
+
+      const promptText = promptPara.textContent.trim();
+      if (!promptText) return;
+
+      navigator.clipboard.writeText(promptText)
+        .then(() => {
+          showToast();
+        })
+        .catch(() => {
+           alert('Press Ctrl+C to copy:\n\n' + promptText);
+        });
+    }
+
+    function attachCopyListeners() {
+      document.querySelectorAll('.btn-copy-card').forEach(btn => {
+    btn.removeEventListener('click', handleCopyClick);
+        btn.addEventListener('click', handleCopyClick);
+      });
+    }
+    attachCopyListeners();
+
+    // Load saved cards from Firestore
+    async function loadSavedCards() {
+      try {
+        const q = query(collection(window.firebaseDB, 'cards'), orderBy('timestamp', 'desc'));
+        const querySnapshot = await getDocs(q);
+        const gallery = document.getElementById('gallery');
+        querySnapshot.forEach((doc) => {
+          const card = doc.data();
+          const cardDiv = createCardElement(card.image, card.prompt);
+          gallery.appendChild(cardDiv);
+        });
+        attachCopyListeners();
+      } catch (error) {
+        console.error('Error loading cards:', error);
+      }
+    }
+
+    // Create card element
+    function createCardElement(imageSrc, promptText) {
+      const cardDiv = document.createElement('div');
+      cardDiv.className = 'flip-card';
+      cardDiv.innerHTML = `
+        <div class="flip-card-inner">
+          <div class="flip-card-front">
+            <img src="${imageSrc}" alt="User uploaded card" loading="lazy">
+          </div>
+          <div class="flip-card-back">
+            <p>${promptText}</p>
+            <button class="btn-copy-card">Copy Prompt</button>
+          </div>
+        </div>
+      `;
+      return cardDiv;
+    }
+
+    // Open modal
+    window.openModal = function() {
+      document.getElementById('addCardModal').classList.add('show');
+    };
+
+    // Close modal
+    window.closeModal = function() {
+      document.getElementById('addCardModal').classList.remove('show');
+      document.getElementById('cardImage').value = '';
+      document.getElementById('cardPrompt').value = '';
+    };
+
+    // Add new card
+    async function addNewCard() {
+      const user = window.firebaseAuth.currentUser;
+      if (!user) {
+        showToast('You must be signed in to add cards.');
+        return;
+      }
+
+      const image = document.getElementById('cardImage').value.trim();
+      const prompt = document.getElementById('cardPrompt').value.trim();
+      if (!image || !prompt) return;
+
+      try {
+        // Save to Firestore
+        await addDoc(collection(window.firebaseDB, 'cards'), {
+          image: image,
+          prompt: prompt,
+          timestamp: new Date(),
+          userId: user.uid
+        });
+
+        // Add to gallery immediately
+        const cardDiv = createCardElement(image, prompt);
+        document.getElementById('gallery').appendChild(cardDiv);
+        attachCopyListeners();
+
+        closeModal();
+        showToast('Card added successfully!');
+      } catch (error) {
+        console.error('Error adding card:', error);
+        showToast('Error adding card. Try again.');
+      }
+    }
+    window.addNewCard = addNewCard;
+
+    // Auth state listener
+    window.onAuthStateChanged(window.firebaseAuth, (user) => {
+      const addCardBtn = document.getElementById('addCardBtn');
+      const signInBtn = document.getElementById('signInBtn');
+      const signOutBtn = document.getElementById('signOutBtn');
+      
+      if (user) {
+        // User is signed in
+        addCardBtn.style.display = 'inline-flex';
+        signInBtn.style.display = 'none';
+        signOutBtn.style.display = 'inline-flex';
+      } else {
+        // User is signed out
+        addCardBtn.style.display = 'none';
+        signInBtn.style.display = 'inline-flex';
+        signOutBtn.style.display = 'none';
+      }
+    });
+
+    // Open sign in modal
+    window.openSignInModal = function() {
+      document.getElementById('signInModal').classList.add('show');
+    };
+
+    // Close sign in modal
+    window.closeSignInModal = function() {
+      document.getElementById('signInModal').classList.remove('show');
+      document.getElementById('email').value = '';
+      document.getElementById('password').value = '';
+    };
+
+    // Sign in user
+    async function signInUser() {
+      const email = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value.trim();
+      
+      if (!email || !password) return;
+      
+      try {
+        await window.signInWithEmailAndPassword(window.firebaseAuth, email, password);
+        closeSignInModal();
+        showToast('Signed in successfully!');
+      } catch (error) {
+        console.error('Sign in error:', error);
+        showToast('Sign in failed. Check credentials.');
+      }
+    }
+
+    // Sign out user
+    async function signOutUser() {
+      try {
+        await window.signOut(window.firebaseAuth);
+        showToast('Signed out successfully!');
+      } catch (error) {
+        console.error('Sign out error:', error);
+      }
+    }
+
+    // Load cards on page load
+    loadSavedCards();
+
+    // Attach UI handlers
+    document.getElementById('signInBtn').addEventListener('click', openSignInModal);
+    document.getElementById('signOutBtn').addEventListener('click', signOutUser);
+    document.getElementById('addCardBtn').addEventListener('click', openModal);
+
+    // Modal buttons
+    document.getElementById('signInSubmit').addEventListener('click', signInUser);
+    document.getElementById('signInCancel').addEventListener('click', closeSignInModal);
   </script>
   <script>
     // Ensure login modal functions exist even if the module fails to load
@@ -401,204 +596,6 @@
 <!-- simple footer -->
 <div class="footer-bar">© 2026 RNDR — prompt library</div>
 
-<script>
-  (function() {
-    'use strict';
 
-    const toast = document.getElementById('toast');
-
-    // Show toast message (reusable)
-    function showToast(message = '✨ Prompt copied to clipboard') {
-      toast.textContent = message;
-      toast.classList.add('show');
-      clearTimeout(window.toastTimer);
-      window.toastTimer = setTimeout(() => {
-        toast.classList.remove('show');
-      }, 2000);
-    }
-
-    // Copy handler — robust: find the <p> inside the same .flip-card-back
-    function handleCopyClick(ev) {
-      const button = ev.currentTarget;
-      // navigate up to .flip-card-back, then find the paragraph
-      const backSide = button.closest('.flip-card-back');
-      if (!backSide) return;
-
-      const promptPara = backSide.querySelector('p');
-      if (!promptPara) return;
-
-      const promptText = promptPara.textContent.trim();
-      if (!promptText) return;
-
-      navigator.clipboard.writeText(promptText)
-        .then(() => {
-          showToast();
-        })
-        .catch(() => {
-           alert('Press Ctrl+C to copy:\n\n' + promptText);
-        });
-    }
-
-    function attachCopyListeners() {
-      document.querySelectorAll('.btn-copy-card').forEach(btn => {
-    btn.removeEventListener('click', handleCopyClick);
-        btn.addEventListener('click', handleCopyClick);
-      });
-    }
-    attachCopyListeners();
-
-    // Load saved cards from Firestore
-    async function loadSavedCards() {
-      try {
-        const q = query(collection(window.firebaseDB, 'cards'), orderBy('timestamp', 'desc'));
-        const querySnapshot = await getDocs(q);
-        const gallery = document.getElementById('gallery');
-        querySnapshot.forEach((doc) => {
-          const card = doc.data();
-          const cardDiv = createCardElement(card.image, card.prompt);
-          gallery.appendChild(cardDiv);
-        });
-        attachCopyListeners();
-      } catch (error) {
-        console.error('Error loading cards:', error);
-      }
-    }
-
-    // Create card element
-    function createCardElement(imageSrc, promptText) {
-      const cardDiv = document.createElement('div');
-      cardDiv.className = 'flip-card';
-      cardDiv.innerHTML = `
-        <div class="flip-card-inner">
-          <div class="flip-card-front">
-            <img src="${imageSrc}" alt="User uploaded card" loading="lazy">
-          </div>
-          <div class="flip-card-back">
-            <p>${promptText}</p>
-            <button class="btn-copy-card">Copy Prompt</button>
-          </div>
-        </div>
-      `;
-      return cardDiv;
-    }
-
-    // Open modal
-    window.openModal = function() {
-      document.getElementById('addCardModal').classList.add('show');
-    };
-
-    // Close modal
-    window.closeModal = function() {
-      document.getElementById('addCardModal').classList.remove('show');
-      document.getElementById('cardImage').value = '';
-      document.getElementById('cardPrompt').value = '';
-    };
-
-    // Add new card
-    async function addNewCard() {
-      const user = window.firebaseAuth.currentUser;
-      if (!user) {
-        showToast('You must be signed in to add cards.');
-        return;
-      }
-
-      const image = document.getElementById('cardImage').value.trim();
-      const prompt = document.getElementById('cardPrompt').value.trim();
-      if (!image || !prompt) return;
-
-      try {
-        // Save to Firestore
-        await addDoc(collection(window.firebaseDB, 'cards'), {
-          image: image,
-          prompt: prompt,
-          timestamp: new Date(),
-          userId: user.uid
-        });
-
-        // Add to gallery immediately
-        const cardDiv = createCardElement(image, prompt);
-        document.getElementById('gallery').appendChild(cardDiv);
-        attachCopyListeners();
-
-        closeModal();
-        showToast('Card added successfully!');
-      } catch (error) {
-        console.error('Error adding card:', error);
-        showToast('Error adding card. Try again.');
-      }
-    }
-
-    // Auth state listener
-    window.onAuthStateChanged(window.firebaseAuth, (user) => {
-      const addCardBtn = document.getElementById('addCardBtn');
-      const signInBtn = document.getElementById('signInBtn');
-      const signOutBtn = document.getElementById('signOutBtn');
-      
-      if (user) {
-        // User is signed in
-        addCardBtn.style.display = 'inline-flex';
-        signInBtn.style.display = 'none';
-        signOutBtn.style.display = 'inline-flex';
-      } else {
-        // User is signed out
-        addCardBtn.style.display = 'none';
-        signInBtn.style.display = 'inline-flex';
-        signOutBtn.style.display = 'none';
-      }
-    });
-
-    // Open sign in modal
-    window.openSignInModal = function() {
-      document.getElementById('signInModal').classList.add('show');
-    };
-
-    // Close sign in modal
-    window.closeSignInModal = function() {
-      document.getElementById('signInModal').classList.remove('show');
-      document.getElementById('email').value = '';
-      document.getElementById('password').value = '';
-    };
-
-    // Sign in user
-    async function signInUser() {
-      const email = document.getElementById('email').value.trim();
-      const password = document.getElementById('password').value.trim();
-      
-      if (!email || !password) return;
-      
-      try {
-        await window.signInWithEmailAndPassword(window.firebaseAuth, email, password);
-        closeSignInModal();
-        showToast('Signed in successfully!');
-      } catch (error) {
-        console.error('Sign in error:', error);
-        showToast('Sign in failed. Check credentials.');
-      }
-    }
-
-    // Sign out user
-    async function signOutUser() {
-      try {
-        await window.signOut(window.firebaseAuth);
-        showToast('Signed out successfully!');
-      } catch (error) {
-        console.error('Sign out error:', error);
-      }
-    }
-
-    // Load cards on page load
-    loadSavedCards();
-
-    // Attach UI handlers
-    document.getElementById('signInBtn').addEventListener('click', openSignInModal);
-    document.getElementById('signOutBtn').addEventListener('click', signOutUser);
-    document.getElementById('addCardBtn').addEventListener('click', openModal);
-
-    // Modal buttons
-    document.getElementById('signInSubmit').addEventListener('click', signInUser);
-    document.getElementById('signInCancel').addEventListener('click', closeSignInModal);
-
-})();
-</script>
 </body>
 </html>

@@ -588,6 +588,12 @@
 
     // Load cards on page load
     loadSavedCards();
+
+    // Attach UI handlers
+    document.getElementById('signInBtn').addEventListener('click', openSignInModal);
+    document.getElementById('signOutBtn').addEventListener('click', signOutUser);
+    document.getElementById('addCardBtn').addEventListener('click', openModal);
+
 })();
 </script>
 </body>
